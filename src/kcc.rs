@@ -193,7 +193,7 @@ fn run_kcc(
 
         update_grounded(&mut transform, &velocity, &move_and_slide, &mut state, &ctx);
 
-        handle_crounching(*transform, &move_and_slide, &mut state, &ctx);
+        handle_crouching(*transform, &move_and_slide, &mut state, &ctx);
 
         // here we'd handle things like spectator, dead, noclip, etc.
         start_gravity(&mut velocity, &mut state, &ctx);
@@ -650,7 +650,6 @@ fn calculate_wish_velocity(state: &CharacterControllerState, ctx: &Ctx) -> Vec3 
     let mut forward = Vec3::from(ctx.orientation.forward());
     forward.y = 0.0;
     forward = forward.normalize_or_zero();
-    forward = forward.normalize_or_zero();
     let mut right = Vec3::from(ctx.orientation.right());
     right.y = 0.0;
     right = right.normalize_or_zero();
@@ -667,7 +666,7 @@ fn calculate_wish_velocity(state: &CharacterControllerState, ctx: &Ctx) -> Vec3 
     wish_dir * speed
 }
 
-fn handle_crounching(
+fn handle_crouching(
     transform: Transform,
     move_and_slide: &MoveAndSlide,
     state: &mut CharacterControllerState,
