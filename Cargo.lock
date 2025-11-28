@@ -394,6 +394,7 @@ dependencies = [
  "bevy_derive",
  "bevy_ecs",
  "bevy_enhanced_input",
+ "bevy_fix_cursor_unlock_web",
  "bevy_math",
  "bevy_mod_mipmap_generator",
  "bevy_reflect",
@@ -746,6 +747,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "bevy_fix_cursor_unlock_web"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c436b85a08404677c0b5fd6364fa142a6e86d30dc8c89fe134a8e621a80fc43f"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_window",
+ "web-sys",
 ]
 
 [[package]]

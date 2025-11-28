@@ -12,17 +12,19 @@ use bevy::{
     pbr::Atmosphere,
     post_process::bloom::Bloom,
     prelude::*,
+    window::{CursorGrabMode, CursorOptions},
 };
 use bevy_ahoy::{kcc::CharacterControllerState, prelude::*};
 use bevy_ecs::world::FilteredEntityRef;
 use bevy_enhanced_input::prelude::{Release, *};
+use bevy_fix_cursor_unlock_web::{FixPointerUnlockPlugin, ForceUnlockCursor};
 use bevy_mod_mipmap_generator::{MipmapGeneratorPlugin, generate_mipmaps};
 
 pub(super) struct ExampleUtilPlugin;
 
 impl Plugin for ExampleUtilPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MipmapGeneratorPlugin)
+        app.add_plugins((MipmapGeneratorPlugin, FixPointerUnlockPlugin))
             .add_systems(Startup, setup_ui)
             .add_systems(
                 Update,
@@ -35,8 +37,10 @@ impl Plugin for ExampleUtilPlugin {
             .add_observer(reset_player)
             .add_observer(tweak_camera)
             .add_observer(tweak_directional_light)
-            .insert_resource(DirectionalLightShadowMap { size: 4096 })
-            .add_systems(Update, dynamic_scene)
+            .add_observer(toggle_debug)
+            .add_observer(unlock_cursor_web)
+            .insert_resource(DirectionalLightShadowMap { size: 4096 * 2 })
+            .add_systems(Update, turn_sun)
             .add_input_context::<DebugInput>()
             // For debug printing
             .register_required_components::<CharacterController, CollidingEntities>();
@@ -111,26 +115,38 @@ fn update_debug_text(
 struct DebugText;
 
 fn setup_ui(mut commands: Commands) {
-    commands.spawn((Node::default(), Text::new("Loading..."), DebugText));
+    commands.spawn((
+        Node::default(),
+        Text::default(),
+        Visibility::Hidden,
+        DebugText,
+    ));
     commands.spawn((
         Node {
             justify_self: JustifySelf::End,
             justify_content: JustifyContent::End,
+            align_self: AlignSelf::End,
+            padding: UiRect::all(px(10.0)),
             ..default()
         },
         Text::new(
-            "Controls:\nWASD: move\nSpace: jump\nSpace (hold): autohop\nCtrl: crouch\nEsc: free mouse\nR: reset position",
+            "Controls:\nWASD: move\nSpace: jump\nSpace (hold): autohop\nCtrl: crouch\nEsc: free mouse\nR: reset position\nBacktick: Toggle Debug Menu",
         ),
     ));
     commands.spawn((
         DebugInput,
-        actions!(
-            DebugInput[(
+        actions!(DebugInput[
+            (
                 Action::<Reset>::new(),
                 bindings![KeyCode::KeyR, GamepadButton::Select],
                 Release::default(),
-            )]
-        ),
+            ),
+            (
+                Action::<ToggleDebug>::new(),
+                bindings![KeyCode::Backquote, GamepadButton::Start],
+                Release::default(),
+            ),
+        ]),
     ));
 }
 
@@ -141,8 +157,22 @@ struct DebugInput;
 #[action_output(bool)]
 pub(super) struct Reset;
 
+#[derive(Debug, InputAction)]
+#[action_output(bool)]
+pub(super) struct ToggleDebug;
+
 fn reset_player(_fire: On<Fire<Reset>>, mut commands: Commands) {
     commands.run_system_cached(reset_player_inner);
+}
+
+fn toggle_debug(
+    _fire: On<Fire<ToggleDebug>>,
+    mut visibility: Single<&mut Visibility, With<DebugText>>,
+) {
+    **visibility = match **visibility {
+        Visibility::Hidden => Visibility::Inherited,
+        _ => Visibility::Hidden,
+    };
 }
 
 fn reset_player_inner(
@@ -261,11 +291,19 @@ fn tweak_directional_light(
 
 #[derive(Component)]
 struct Tweaked;
-fn dynamic_scene(mut suns: Query<&mut Transform, With<DirectionalLight>>, time: Res<Time>) {
+fn turn_sun(mut suns: Query<&mut Transform, With<DirectionalLight>>, time: Res<Time>) {
     for mut transform in suns.iter_mut() {
         transform.rotation =
             Quat::from_rotation_x(
                 -((-time.elapsed_secs() / 100.0) + TAU / 8.0).sin().abs() * TAU / 2.05,
             ) * Quat::from_rotation_y(((-time.elapsed_secs() / 100.0) + 1.0).sin());
     }
+}
+
+fn unlock_cursor_web(
+    _unlock: On<ForceUnlockCursor>,
+    mut cursor_options: Single<&mut CursorOptions>,
+) {
+    cursor_options.grab_mode = CursorGrabMode::None;
+    cursor_options.visible = true;
 }

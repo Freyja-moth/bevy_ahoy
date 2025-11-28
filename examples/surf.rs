@@ -63,6 +63,7 @@ fn main() -> AppExit {
                 .set(WindowPlugin {
                     primary_window: Window {
                         resolution: WindowResolution::new(1920, 1080),
+                        fit_canvas_to_parent: true,
                         ..default()
                     }
                     .into(),
@@ -295,6 +296,7 @@ fn setup_time(_add: On<Add, Player>, mut commands: Commands) {
         Node {
             justify_self: JustifySelf::Center,
             justify_content: JustifyContent::Center,
+            top: px(20.0),
             ..default()
         },
         Text::new("Time: 00:00:000"),
