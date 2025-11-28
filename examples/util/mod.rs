@@ -1,31 +1,28 @@
 //! Common functionality for the examples. This is just aesthetic stuff, you don't need to copy any of this into your own projects.
 
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::TAU;
 
 use avian3d::prelude::*;
 use bevy::{
-    anti_alias::taa::TemporalAntiAliasing,
     camera::Exposure,
-    core_pipeline::tonemapping::Tonemapping,
     light::{
-        AtmosphereEnvironmentMapLight, CascadeShadowConfigBuilder, DirectionalLightShadowMap,
-        ShadowFilteringMethod, light_consts::lux,
+        CascadeShadowConfigBuilder, DirectionalLightShadowMap, ShadowFilteringMethod,
+        light_consts::lux,
     },
-    pbr::{Atmosphere, ScreenSpaceAmbientOcclusion, ScreenSpaceAmbientOcclusionQualityLevel},
+    pbr::Atmosphere,
     post_process::bloom::Bloom,
     prelude::*,
 };
 use bevy_ahoy::{kcc::CharacterControllerState, prelude::*};
 use bevy_ecs::world::FilteredEntityRef;
 use bevy_enhanced_input::prelude::{Release, *};
-use bevy_math::VectorSpace;
 use bevy_mod_mipmap_generator::{MipmapGeneratorPlugin, generate_mipmaps};
 
 pub(super) struct ExampleUtilPlugin;
 
 impl Plugin for ExampleUtilPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((MipmapGeneratorPlugin))
+        app.add_plugins(MipmapGeneratorPlugin)
             .add_systems(Startup, setup_ui)
             .add_systems(
                 Update,
