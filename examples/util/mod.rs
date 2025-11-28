@@ -137,7 +137,8 @@ fn reset_player(_fire: On<Fire<Reset>>, mut commands: Commands) {
 fn reset_player_inner(
     world: &mut World,
     mut player: Local<QueryState<(&mut Transform, &mut LinearVelocity), With<CharacterController>>>,
-    mut spawner: Local<QueryState<&Transform, Without<CharacterController>>>,
+    mut camera: Local<QueryState<&mut Transform, (With<Camera3d>, Without<CharacterController>)>>,
+    mut spawner: Local<QueryState<&Transform, (Without<CharacterController>, Without<Camera3d>)>>,
 ) {
     let component_id = {
         let type_registry = world.resource::<AppTypeRegistry>().read();
@@ -165,6 +166,10 @@ fn reset_player_inner(
     };
     **velocity = Vec3::ZERO;
     transform.translation = spawner_transform.translation;
+    let Ok(mut camera_transform) = camera.single_mut(world) else {
+        return;
+    };
+    camera_transform.rotation = Quat::IDENTITY;
 }
 
 fn tweak_materials(

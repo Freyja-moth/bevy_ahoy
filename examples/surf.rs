@@ -18,6 +18,10 @@ use bevy_trenchbroom::{physics::SceneCollidersReady, prelude::*};
 use bevy_trenchbroom_avian::AvianPhysicsBackend;
 use core::ops::Deref;
 
+use crate::util::ExampleUtilPlugin;
+
+mod util;
+
 fn main() -> AppExit {
     App::new()
         .add_plugins((
@@ -70,25 +74,35 @@ fn main() -> AppExit {
             PhysicsPlugins::default(),
             EnhancedInputPlugin,
             AhoyPlugin::default(),
-            MipmapGeneratorPlugin,
             TrenchBroomPlugins(
-                TrenchBroomConfig::new("bevy_ahoy_surf").default_solid_scene_hooks(|| {
-                    SceneHooks::new()
-                        .convex_collider()
-                        .smooth_by_default_angle()
-                }),
+                TrenchBroomConfig::new("bevy_ahoy_surf")
+                    .default_solid_scene_hooks(|| {
+                        SceneHooks::new()
+                            .convex_collider()
+                            .smooth_by_default_angle()
+                    })
+                    .auto_remove_textures(
+                        [
+                            "clip",
+                            "skip",
+                            "__TB_empty",
+                            "utopia/nodraw",
+                            "tools/tool_trigger",
+                        ]
+                        .into_iter()
+                        .map(String::from)
+                        .collect::<std::collections::HashSet<_>>(),
+                    ),
             ),
             TrenchBroomPhysicsPlugin::new(AvianPhysicsBackend),
+            ExampleUtilPlugin,
         ))
         .add_input_context::<PlayerInput>()
-        .insert_resource(DirectionalLightShadowMap { size: 2048 })
-        .add_systems(Startup, (setup, setup_ui))
-        .add_observer(reset_player)
+        .add_systems(Startup, setup)
+        .add_observer(spawn_player)
         .add_systems(
             Update,
             (
-                update_debug_text,
-                generate_mipmaps::<StandardMaterial>,
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
             ),
@@ -97,37 +111,8 @@ fn main() -> AppExit {
 }
 
 fn setup(mut commands: Commands, assets: Res<AssetServer>) {
-    commands
-        .spawn(SceneRoot(assets.load("maps/utopia.map#Scene")))
-        .observe(tweak_materials);
-    commands.spawn((
-        Camera3d::default(),
-        EnvironmentMapLight {
-            diffuse_map: assets.load("environment_maps/voortrekker_interior_1k_diffuse.ktx2"),
-            specular_map: assets.load("environment_maps/voortrekker_interior_1k_specular.ktx2"),
-            intensity: 2000.0,
-            ..default()
-        },
-        Projection::Perspective(PerspectiveProjection {
-            fov: 70.0_f32.to_radians(),
-            ..default()
-        }),
-        Atmosphere::EARTH,
-    ));
-    commands.spawn((
-        Transform::from_xyz(0.0, 1.0, 0.0).looking_at(vec3(1.0, -2.0, -2.0), Vec3::Y),
-        DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        CascadeShadowConfigBuilder {
-            maximum_distance: 500.0,
-            first_cascade_far_bound: 15.0,
-            overlap_proportion: 0.5,
-            ..default()
-        }
-        .build(),
-    ));
+    commands.spawn(SceneRoot(assets.load("maps/utopia.map#Scene")));
+    commands.spawn(Camera3d::default());
 }
 
 #[derive(Component, Reflect, Debug)]
@@ -135,79 +120,45 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
 struct Player;
 
 #[point_class(base(Transform, Visibility))]
-#[component(on_add = SpawnPlayer::on_add)]
 #[reflect(Component)]
 struct SpawnPlayer;
 
-impl SpawnPlayer {
-    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
-        if world.is_scene_world() {
-            return;
-        }
-        if world.try_query::<&Player>().unwrap().single(&world).is_ok() {
-            return;
-        }
-        let Some(transform) = world.get::<Transform>(ctx.entity).copied() else {
-            return;
-        };
-        let player = world
-            .commands()
-            .spawn((
-                Player,
-                transform,
-                PlayerInput,
-                CharacterController {
-                    acceleration_hz: 10.0,
-                    air_acceleration_hz: 150.0,
-                    ..default()
-                },
-                RigidBody::Kinematic,
-                Collider::cylinder(0.7, 1.8),
-                // For debugging
-                CollidingEntities::default(),
-            ))
-            .id();
-        let camera = world
-            .try_query_filtered::<Entity, With<Camera3d>>()
-            .unwrap()
-            .single(&world)
-            .unwrap();
-        world
-            .commands()
-            .entity(camera)
-            .insert(CharacterControllerCameraOf(player));
-    }
-}
-
-fn reset_player(
-    _fire: On<Fire<Reset>>,
-    player: Single<(&mut Transform, &mut LinearVelocity), With<Player>>,
-    spawner: Single<&Transform, (With<SpawnPlayer>, Without<Player>)>,
+fn spawn_player(
+    insert: On<Insert, SpawnPlayer>,
+    players: Query<Entity, With<Player>>,
+    spawner: Query<&Transform>,
+    camera: Single<Entity, With<Camera3d>>,
+    mut commands: Commands,
 ) {
-    let (mut transform, mut velocity) = player.into_inner();
-    **velocity = Vec3::ZERO;
-    transform.translation = spawner.translation;
-}
-
-fn tweak_materials(
-    ready: On<SceneInstanceReady>,
-    children: Query<&Children>,
-    materials: Query<&MeshMaterial3d<StandardMaterial>>,
-    mut material_assets: ResMut<Assets<StandardMaterial>>,
-) {
-    for mat in materials.iter_many(children.iter_descendants(ready.entity)) {
-        let mat = material_assets.get_mut(mat).unwrap();
-        mat.perceptual_roughness = 0.9;
+    for player in players {
+        // Respawn the player on hot-reloads
+        commands.entity(player).despawn();
     }
+    let Ok(transform) = spawner.get(insert.entity).copied() else {
+        return;
+    };
+    let player = commands
+        .spawn((
+            Player,
+            transform,
+            PlayerInput,
+            CharacterController {
+                acceleration_hz: 10.0,
+                air_acceleration_hz: 150.0,
+                ..default()
+            },
+            RigidBody::Kinematic,
+            Collider::cylinder(0.7, 1.8),
+        ))
+        .id();
+    commands
+        .entity(camera.into_inner())
+        .insert(CharacterControllerCameraOf(player));
 }
 
 #[derive(Component, Default)]
 #[component(on_add = PlayerInput::on_add)]
 pub(crate) struct PlayerInput;
-
-#[derive(Debug, InputAction)]
-#[action_output(Vec2)]
-pub(crate) struct Reset;
 
 impl PlayerInput {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
@@ -232,12 +183,8 @@ impl PlayerInput {
                     bindings![KeyCode::ControlLeft, GamepadButton::LeftTrigger],
                 ),
                 (
-                    Action::<Reset>::new(),
-                    bindings![KeyCode::KeyR, GamepadButton::Select],
-                    Release::default(),
-                ),               (
                     Action::<RotateCamera>::new(),
-                    Scale::splat(0.1),
+                    Scale::splat(0.04),
                     Bindings::spawn((
                         Spawn(Binding::mouse_motion()),
                         Axial::right_stick()
@@ -286,35 +233,6 @@ impl TriggerPush {
     }
 }
 
-fn on_add_prop<T: QuakeClass + Deref<Target = bool>>(mut world: DeferredWorld, ctx: HookContext) {
-    if world.is_scene_world() {
-        return;
-    }
-    let dynamic = *world.get::<T>(ctx.entity).unwrap().deref();
-    let assets = world.resource::<AssetServer>().clone();
-    world
-        .commands()
-        .entity(ctx.entity)
-        .insert((
-            SceneRoot(
-                assets
-                    .load(GltfAssetLabel::Scene(0).from_asset(T::CLASS_INFO.model_path().unwrap())),
-            ),
-            ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
-            if dynamic {
-                RigidBody::Dynamic
-            } else {
-                RigidBody::Static
-            },
-            TransformInterpolation,
-        ))
-        .observe(|ready: On<SceneCollidersReady>, mut commands: Commands| {
-            for collider in &ready.collider_entities {
-                commands.entity(*collider).insert(ColliderDensity(100.0));
-            }
-        });
-}
-
 fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.grab_mode = CursorGrabMode::Locked;
     cursor.visible = false;
@@ -323,85 +241,4 @@ fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
 fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.visible = true;
     cursor.grab_mode = CursorGrabMode::None;
-}
-
-fn update_debug_text(
-    mut text: Single<&mut Text, With<DebugText>>,
-    kcc: Single<
-        (
-            &CharacterControllerState,
-            &LinearVelocity,
-            &CollidingEntities,
-            &ColliderAabb,
-        ),
-        With<CharacterController>,
-    >,
-    camera: Single<&Transform, With<Camera>>,
-    names: Query<NameOrEntity>,
-) {
-    let (state, velocity, colliding_entities, aabb) = kcc.into_inner();
-    let velocity = **velocity;
-    let speed = velocity.length();
-    let horizontal_speed = velocity.xz().length();
-    let camera_position = camera.translation;
-    let collisions = names
-        .iter_many(state.touching_entities.iter())
-        .map(|name| {
-            name.name
-                .map(|n| format!("{} ({})", name.entity, n))
-                .unwrap_or_else(|| format!("{}", name.entity))
-        })
-        .collect::<Vec<_>>();
-    let real_collisions = names
-        .iter_many(colliding_entities.iter())
-        .map(|name| {
-            name.name
-                .map(|n| format!("{} ({})", name.entity, n))
-                .unwrap_or_else(|| format!("{}", name.entity))
-        })
-        .collect::<Vec<_>>();
-    let ground = state
-        .grounded
-        .and_then(|ground| names.get(ground.entity).ok())
-        .map(|name| {
-            name.name
-                .map(|n| format!("{} ({})", name.entity, n))
-                .unwrap_or(format!("{}", name.entity))
-        });
-    text.0 = format!(
-        "Speed: {speed:.3}\nHorizontal Speed: {horizontal_speed:.3}\nVelocity: [{:.3}, {:.3}, {:.3}]\nCamera Position: [{:.3}, {:.3}, {:.3}]\nCollider Aabb:\n  min:[{:.3}, {:.3}, {:.3}]\n  max:[{:.3}, {:.3}, {:.3}]\nReal Collisions: {:#?}\nCollisions: {:#?}\nGround: {:?}",
-        velocity.x,
-        velocity.y,
-        velocity.z,
-        camera_position.x,
-        camera_position.y,
-        camera_position.z,
-        aabb.min.x,
-        aabb.min.y,
-        aabb.min.z,
-        aabb.max.x,
-        aabb.max.y,
-        aabb.max.z,
-        real_collisions,
-        collisions,
-        ground
-    );
-}
-
-#[derive(Component, Reflect, Debug)]
-#[reflect(Component)]
-pub(crate) struct DebugText;
-
-fn setup_ui(mut commands: Commands) {
-    commands.spawn((Node::default(), Text::default(), DebugText));
-    commands.spawn((
-        Node {
-            justify_self: JustifySelf::End,
-            justify_content: JustifyContent::End,
-            ..default()
-        },
-        Text::new(
-            "Controls:\nWASD: move\nSpace: jump\nSpace (hold): autohop\nCtrl: crouch\nEsc: free mouse\nR: reset position",
-        ),
-    ));
 }

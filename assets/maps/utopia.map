@@ -40493,7 +40493,8 @@
 }
 // entity 1200
 {
-"classname" "info_teleport_destination"
-"angles" "0 0 0"
-"origin" "-13888 0 12804"
+"classname" "light_directional"
+"origin" "-13912 -200 12808"
+"angles" "38 -129 -41"
+"shadows_enabled" "true"
 }
