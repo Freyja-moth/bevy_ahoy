@@ -13,7 +13,7 @@ A fun 3D Kinematic Character Controller for [Bevy](https://github.com/bevyengine
 
 *Character controller* means that this crate allows you to move characters in a video game around. This can be either player characters or NPCs.
 
-*Kinematic* means that the controller intentionally does not fully obey the simulation rules of the physics engine. That means that the character will for example ignore any forces.
+*Kinematic* means that the controller intentionally does not fully obey the simulation rules of the physics engine. That means that the character will, for example, ignore any forces.
 This tradeoff allows Ahoy to fully define its own separate model of how a character should move regardless of what the laws of physics say. The goal is not realism, the goal is ~ fun ~
 
 ## Features / Roadmap
@@ -33,12 +33,12 @@ This tradeoff allows Ahoy to fully define its own separate model of how a charac
 - [ ] **Events**: observe events for jump start, landing, stair stepping, etc. to add sound effects, particles, damage the character, etc.
 - [ ] **Wall running**: run along walls for a given distance and jump off of them
 - [ ] **Double jump**: jump a second time in the air with a different feel from the first jump. Can be chained with wall running.
-- [ ] **Mantling**: Hold the jump button near ledge while either on the ground or in air to grab it and climb up on it
+- [ ] **Mantling**: Hold the jump button near the ledge while either on the ground or in the air to grab it and climb up on it
 - [ ] **Water**: Dive up and down in water, move slower, and jump differently out of it
 - [ ] **Surface friction**: Set the friction differently on individual surfaces to make them slippery or extra grippy
 - [ ] **Ladders**: Walk or jump to a ladder to hold onto it, then move to climb up and down on it or jump to get off early. Step up the surface when you reach the end of the ladder.
-- [ ] **Coyote Time**: Jump a tiiny bit after walking off a ledge for better jump feeling
-- [ ] **Input Buffering**: Press the jump button a bit before actually hitting the ground to immediatly jump
+- [ ] **Coyote Time**: Jump a tiny bit after walking off a ledge for a better jump feeling
+- [ ] **Input Buffering**: Press the jump button a bit before actually hitting the ground to immediately jump
 
 ## Usage
 
@@ -135,7 +135,7 @@ With that said, here are some goals of Ahoy:
   - Other shapes may or may not work, at your discretion
 - Be tightly integrated with `bevy_enhanced_input`
   - If you don't use BEI already, you really should :)
-  - This allows Ahoy to neatly abstracts away some nasty internal business like input accumulation,
+  - This allows Ahoy to neatly abstract away some nasty internal business like input accumulation,
     while allowing you to bind its behaviors to whatever you want. 
   - Plus, BEI has a lovely lovely input mocking API, allowing us to treat player and NPC input the same way.
 - Be tightly integrated with Avian
