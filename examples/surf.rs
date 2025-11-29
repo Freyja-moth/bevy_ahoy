@@ -4,7 +4,6 @@ use bevy::{
     gltf::GltfPlugin,
     image::{ImageAddressMode, ImageSamplerDescriptor},
     input::common_conditions::input_just_pressed,
-    log::{LogPlugin, tracing_subscriber::field::MakeExt},
     prelude::*,
     window::{CursorGrabMode, CursorOptions, WindowResolution},
 };
@@ -24,31 +23,6 @@ fn main() -> AppExit {
             DefaultPlugins
                 .set(GltfPlugin {
                     use_model_forward_direction: true,
-                    ..default()
-                })
-                .set(LogPlugin {
-                    filter: format!(
-                        concat!(
-                            "{default},",
-                            "symphonia_bundle_mp3::demuxer=warn,",
-                            "symphonia_format_caf::demuxer=warn,",
-                            "symphonia_format_isompf4::demuxer=warn,",
-                            "symphonia_format_mkv::demuxer=warn,",
-                            "symphonia_format_ogg::demuxer=warn,",
-                            "symphonia_format_riff::demuxer=warn,",
-                            "symphonia_format_wav::demuxer=warn,",
-                            "bevy_trenchbroom::physics=off,",
-                            "calloop::loop_logic=error,",
-                        ),
-                        default = bevy::log::DEFAULT_FILTER
-                    ),
-                    fmt_layer: |_| {
-                        Some(Box::new(
-                            bevy::log::tracing_subscriber::fmt::Layer::default()
-                                .map_fmt_fields(MakeExt::debug_alt)
-                                .with_writer(std::io::stderr),
-                        ))
-                    },
                     ..default()
                 })
                 .set(ImagePlugin {

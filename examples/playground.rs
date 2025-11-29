@@ -7,7 +7,7 @@ use bevy::{
     window::{CursorGrabMode, CursorOptions},
 };
 use bevy_ahoy::prelude::*;
-use bevy_enhanced_input::prelude::*;
+use bevy_enhanced_input::prelude::{Press, *};
 use bevy_trenchbroom::{physics::SceneCollidersReady, prelude::*};
 use bevy_trenchbroom_avian::AvianPhysicsBackend;
 use core::ops::Deref;
@@ -110,7 +110,12 @@ impl PlayerInput {
                 ),
                 (
                     Action::<Jump>::new(),
-                    bindings![KeyCode::Space,  GamepadButton::South],
+                    Press::default(),
+                    bindings![
+                        KeyCode::Space,
+                        GamepadButton::South,
+                        Binding::mouse_wheel(),
+                    ],
                 ),
                 (
                     Action::<Crouch>::new(),

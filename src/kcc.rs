@@ -52,6 +52,8 @@ pub struct CharacterController {
     pub jump_height: f32,
     pub max_air_speed: f32,
     pub unground_speed: f32,
+    pub coyote_time: Duration,
+    pub jump_input_buffer: Duration,
     pub step_from_air: bool,
     pub step_into_air: bool,
 }
@@ -82,6 +84,8 @@ impl Default for CharacterController {
             jump_height: 1.5,
             max_air_speed: 0.76,
             unground_speed: 10.0,
+            coyote_time: Duration::from_millis(1000),
+            jump_input_buffer: Duration::from_millis(200),
             step_from_air: false,
             step_into_air: false,
         }
@@ -169,7 +173,7 @@ fn run_kcc(
     mut kccs: Query<(
         &CharacterController,
         &mut CharacterControllerState,
-        &AccumulatedInput,
+        &mut AccumulatedInput,
         &mut Transform,
         &mut LinearVelocity,
         Option<&CharacterControllerCamera>,
@@ -178,7 +182,7 @@ fn run_kcc(
     time: Res<Time>,
     move_and_slide: MoveAndSlide,
 ) {
-    for (cfg, mut state, input, mut transform, mut velocity, cam) in &mut kccs {
+    for (cfg, mut state, mut input, mut transform, mut velocity, cam) in &mut kccs {
         state.touching_entities.clear();
 
         let ctx = Ctx {
@@ -186,7 +190,7 @@ fn run_kcc(
                 .and_then(|e| cams.get(e.get()).copied().ok())
                 .unwrap_or(*transform),
             cfg: cfg.clone(),
-            input: *input,
+            input: input.clone(),
             dt: time.delta_secs(),
             dt_duration: time.delta(),
         };
@@ -199,9 +203,7 @@ fn run_kcc(
         // here we'd handle things like spectator, dead, noclip, etc.
         start_gravity(&mut velocity, &mut state, &ctx);
 
-        if input.jumped {
-            perform_jump(&mut velocity, &mut state, &ctx);
-        }
+        handle_jump(&mut velocity, &mut input, &mut state, &ctx);
 
         // Fricion is handled before we add in any base velocity. That way, if we are on a conveyor,
         //  we don't slow when standing still, relative to the conveyor.
@@ -591,10 +593,19 @@ fn friction(velocity: &mut Vec3, state: &CharacterControllerState, ctx: &Ctx) {
     }
 }
 
-fn perform_jump(velocity: &mut Vec3, state: &mut CharacterControllerState, ctx: &Ctx) {
-    if state.grounded.is_none() {
+fn handle_jump(
+    velocity: &mut Vec3,
+    input: &mut AccumulatedInput,
+    state: &mut CharacterControllerState,
+    ctx: &Ctx,
+) {
+    let Some(jump_time) = input.jumped.clone() else {
+        return;
+    };
+    if state.grounded.is_none() || jump_time.elapsed() > ctx.cfg.jump_input_buffer {
         return;
     }
+    input.jumped = None;
     state.grounded = None;
 
     // TODO: read ground's jump factor

@@ -1,3 +1,5 @@
+use bevy_time::Stopwatch;
+
 use crate::prelude::*;
 
 use crate::fixed_update_utils::did_fixed_timestep_run_this_frame;
@@ -11,7 +13,8 @@ pub(super) fn plugin(app: &mut App) {
             clear_accumulated_input
                 .run_if(did_fixed_timestep_run_this_frame)
                 .in_set(RunFixedMainLoopSystems::AfterFixedMainLoop),
-        );
+        )
+        .add_systems(PreUpdate, tick_timers.in_set(EnhancedInputSystems::Update));
 }
 
 #[derive(Debug, InputAction)]
@@ -31,13 +34,13 @@ pub struct Crouch;
 pub struct RotateCamera;
 
 /// Input accumulated since the last fixed update loop. Is cleared after every fixed update loop.
-#[derive(Component, Clone, Copy, Reflect, Default, Debug)]
+#[derive(Component, Clone, Reflect, Default, Debug)]
 #[reflect(Component)]
 pub struct AccumulatedInput {
     // The last non-zero move that was input since the last fixed update loop
     pub last_movement: Option<Vec2>,
-    // Whether any frame since the last fixed update loop input a jump
-    pub jumped: bool,
+    // Time since the last jump input. Will be `None` once the jump was processed.
+    pub jumped: Option<Stopwatch>,
     // Whether any frame since the last fixed update loop input a crouch
     pub crouched: bool,
 }
@@ -53,7 +56,7 @@ fn apply_movement(
 
 fn apply_jump(jump: On<Fire<Jump>>, mut accumulated_inputs: Query<&mut AccumulatedInput>) {
     if let Ok(mut accumulated_inputs) = accumulated_inputs.get_mut(jump.context) {
-        accumulated_inputs.jumped = true;
+        accumulated_inputs.jumped = Some(Stopwatch::new());
     }
 }
 
@@ -65,6 +68,18 @@ fn apply_crouch(crouch: On<Fire<Crouch>>, mut accumulated_inputs: Query<&mut Acc
 
 fn clear_accumulated_input(mut accumulated_inputs: Query<&mut AccumulatedInput>) {
     for mut accumulated_input in &mut accumulated_inputs {
-        *accumulated_input = default();
+        *accumulated_input = AccumulatedInput {
+            last_movement: default(),
+            jumped: accumulated_input.jumped.clone(),
+            crouched: default(),
+        }
+    }
+}
+
+fn tick_timers(mut inputs: Query<&mut AccumulatedInput>, time: Res<Time>) {
+    for mut input in inputs.iter_mut() {
+        if let Some(jumped) = input.jumped.as_mut() {
+            jumped.tick(time.delta());
+        }
     }
 }
