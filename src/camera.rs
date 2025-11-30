@@ -1,3 +1,5 @@
+use avian_pickup::actor::AvianPickupActor;
+
 use crate::{CharacterControllerState, input::RotateCamera, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
@@ -10,6 +12,7 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component, Clone, Copy)]
 #[relationship(relationship_target = CharacterControllerCamera)]
+#[require(AvianPickupActor)]
 pub struct CharacterControllerCameraOf(pub Entity);
 
 #[derive(Component, Clone, Copy)]

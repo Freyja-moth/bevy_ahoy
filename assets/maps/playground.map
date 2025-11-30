@@ -1432,3 +1432,9 @@
 "angles" "43 -126 -14"
 "shadows_enabled" "true"
 }
+// entity 76
+{
+"classname" "cube"
+"origin" "-8 2040 1696"
+"dynamic" "true"
+}

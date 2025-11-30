@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
-use bevy_ahoy::prelude::*;
+use bevy_ahoy::{PickupHoldConfig, prelude::*};
 use bevy_enhanced_input::prelude::{Press, *};
 use bevy_trenchbroom::{physics::SceneCollidersReady, prelude::*};
 use bevy_trenchbroom_avian::AvianPhysicsBackend;
@@ -79,15 +79,27 @@ fn spawn_player(
         .spawn((
             Player,
             transform,
+            CollisionLayers::new(CollisionLayer::Player, LayerMask::ALL),
             PlayerInput,
             CharacterController::default(),
             RigidBody::Kinematic,
             Collider::cylinder(0.7, 1.8),
         ))
         .id();
-    commands
-        .entity(camera.into_inner())
-        .insert(CharacterControllerCameraOf(player));
+    commands.entity(camera.into_inner()).insert((
+        CharacterControllerCameraOf(player),
+        PickupConfig {
+            prop_filter: SpatialQueryFilter::from_mask(CollisionLayer::Prop),
+            actor_filter: SpatialQueryFilter::from_mask(CollisionLayer::Player),
+            obstacle_filter: SpatialQueryFilter::from_mask(CollisionLayer::Default),
+            hold: PickupHoldConfig {
+                preferred_distance: 0.9,
+                linear_velocity_easing: 0.8,
+                ..default()
+            },
+            ..default()
+        },
+    ));
 }
 
 #[derive(Component, Default)]
@@ -120,6 +132,21 @@ impl PlayerInput {
                 (
                     Action::<Crouch>::new(),
                     bindings![KeyCode::ControlLeft, GamepadButton::LeftTrigger],
+                ),
+                (
+                    Action::<PullObject>::new(),
+                    Press::default(),
+                    bindings![MouseButton::Right],
+                ),
+                (
+                    Action::<DropObject>::new(),
+                    Press::default(),
+                    bindings![MouseButton::Right],
+                ),
+                (
+                    Action::<ThrowObject>::new(),
+                    Press::default(),
+                    bindings![MouseButton::Left],
                 ),
                 (
                     Action::<RotateCamera>::new(),
@@ -182,7 +209,8 @@ fn on_add_prop<T: QuakeClass + Deref<Target = bool>>(mut world: DeferredWorld, c
                 assets
                     .load(GltfAssetLabel::Scene(0).from_asset(T::CLASS_INFO.model_path().unwrap())),
             ),
-            ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+            ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh)
+                .with_default_layers(CollisionLayers::new(CollisionLayer::Prop, LayerMask::ALL)),
             if dynamic {
                 RigidBody::Dynamic
             } else {
@@ -205,4 +233,12 @@ fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
 fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.visible = true;
     cursor.grab_mode = CursorGrabMode::None;
+}
+
+#[derive(Debug, PhysicsLayer, Default)]
+enum CollisionLayer {
+    #[default]
+    Default,
+    Player,
+    Prop,
 }

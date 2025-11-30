@@ -16,13 +16,23 @@ pub mod prelude {
     };
 
     pub use crate::{
-        AhoyPlugin, AhoySystems, CharacterController,
+        AhoyPlugin, AhoySystems, CharacterController, PickupConfig,
         camera::{CharacterControllerCamera, CharacterControllerCameraOf},
-        input::{Crouch, Jump, Movement, RotateCamera},
+        input::{Crouch, DropObject, Jump, Movement, PullObject, RotateCamera, ThrowObject},
+        pickup,
     };
 }
 
 use crate::{input::AccumulatedInput, prelude::*};
+use avian_pickup::AvianPickupPlugin;
+pub use avian_pickup::{
+    self as pickup,
+    prelude::{
+        AvianPickupActor as PickupConfig, AvianPickupActorHoldConfig as PickupHoldConfig,
+        AvianPickupActorPullConfig as PickupPullConfig,
+        AvianPickupActorThrowConfig as PickupThrowConfig,
+    },
+};
 use avian3d::{
     character_controller::move_and_slide::MoveHitData,
     parry::shape::{Capsule, SharedShape},
@@ -39,6 +49,7 @@ pub mod camera;
 mod fixed_update_utils;
 pub mod input;
 mod kcc;
+mod pickup_glue;
 
 /// Also requires you to add [`PhysicsPlugins`] and [`EnhancedInputPlugin`] to work properly.
 pub struct AhoyPlugin {
@@ -75,6 +86,8 @@ impl Plugin for AhoyPlugin {
             input::plugin,
             kcc::plugin(self.schedule),
             fixed_update_utils::plugin,
+            pickup_glue::plugin,
+            AvianPickupPlugin::default(),
         ));
     }
 }

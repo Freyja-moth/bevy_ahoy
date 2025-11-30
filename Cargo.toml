@@ -30,6 +30,7 @@ bevy_time = { version = "0.17", default-features = false }
 bevy_enhanced_input = { version = "0.19.3", default-features = false }
 tracing = { version = "0.1", default-features = false }
 bevy_fix_cursor_unlock_web = "0.2.0"
+avian_pickup ={version= "0.3.0", path = "../avian_pickup"}
 
 [dev-dependencies]
 bevy = { version = "0.17", features = ["track_location"] }
