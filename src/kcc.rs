@@ -244,6 +244,7 @@ fn step_move(
 ) {
     let original_position = transform.translation;
     let original_velocity = *velocity;
+    let original_touching_entities = state.touching_entities.clone();
 
     // Slide the direct path
     move_character(transform, velocity, move_and_slide, state, ctx);
@@ -254,6 +255,7 @@ fn step_move(
 
     transform.translation = original_position;
     *velocity = original_velocity;
+    state.touching_entities = original_touching_entities;
 
     // step up
     let cast_dir = Dir3::Y;
