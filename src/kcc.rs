@@ -518,17 +518,17 @@ fn set_grounded(
         && let Some(old_ground) = old_ground
         && let Ok((ground_velocity, ang_vel, com, pos, rot)) = colliders.get(old_ground.entity)
     {
-        let axis = old_ground.point1 - (com.0 + pos.0);
+        let axis = old_ground.point1 - ((rot.0 * com.0) + pos.0);
         let combined_vel = ground_velocity.0 + ang_vel.0.cross(axis);
         state.base_velocity.y = combined_vel.y;
     } else if let Some(new_ground) = new_ground
         && let Ok((lin_vel, ang_vel, com, pos, rot)) = colliders.get(new_ground.entity)
     {
         let platform_transform = Transform::IDENTITY
-            .with_translation(pos.0)
+            .with_translation((rot.0 * com.0) + pos.0)
             .with_rotation(rot.0);
         let next_platform_transform = Transform::IDENTITY
-            .with_translation(pos.0 + lin_vel.0 * ctx.dt)
+            .with_translation((rot.0 * com.0) + pos.0 + lin_vel.0 * ctx.dt)
             .with_rotation(Quat::from_scaled_axis(ang_vel.0 * ctx.dt) * rot.0);
         let mut touch_point = transform.translation;
         touch_point.y = new_ground.point1.y;
