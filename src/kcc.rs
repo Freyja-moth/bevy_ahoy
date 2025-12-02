@@ -249,7 +249,7 @@ fn air_accelerate(velocity: &mut Vec3, wish_velocity: Vec3, acceleration_hz: f32
     let Ok((wish_dir, wish_speed)) = Dir3::new_and_length(wish_velocity) else {
         return;
     };
-    let wishspd = f32::min(wish_speed, ctx.cfg.max_air_speed);
+    let wishspd = f32::min(wish_speed, ctx.cfg.max_air_wish_speed);
     let current_speed = velocity.dot(*wish_dir);
 
     let add_speed = wishspd - current_speed;
