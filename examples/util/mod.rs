@@ -5,10 +5,7 @@ use std::f32::consts::TAU;
 use avian3d::prelude::*;
 use bevy::{
     camera::Exposure,
-    light::{
-        CascadeShadowConfigBuilder, DirectionalLightShadowMap, ShadowFilteringMethod,
-        light_consts::lux,
-    },
+    light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap, light_consts::lux},
     pbr::Atmosphere,
     platform::collections::HashSet,
     post_process::bloom::Bloom,
@@ -46,6 +43,7 @@ impl Plugin for ExampleUtilPlugin {
         .add_observer(toggle_debug)
         .add_observer(unlock_cursor_web)
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
+        .insert_resource(AmbientLight::NONE)
         .add_systems(Update, turn_sun)
         .add_input_context::<DebugInput>()
         // For debug printing
@@ -298,7 +296,6 @@ fn tweak_directional_light(
             ..default()
         }
         .build(),
-        ShadowFilteringMethod::Temporal,
     ));
 }
 
