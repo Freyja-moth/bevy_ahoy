@@ -166,7 +166,7 @@ impl Default for CharacterController {
             friction_hz: 6.0,
             acceleration_hz: 8.0,
             air_acceleration_hz: 12.0,
-            gravity: 26.0,
+            gravity: 29.0,
             step_size: 0.7,
             crane_height: 1.3,
             crouch_speed_scale: 1.0 / 3.0,
