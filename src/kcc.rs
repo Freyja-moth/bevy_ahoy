@@ -7,7 +7,7 @@ use bevy_ecs::{
 };
 use core::fmt::Debug;
 use std::time::Duration;
-use tracing::{error, info, warn};
+use tracing::warn;
 
 use crate::{CharacterControllerState, input::AccumulatedInput, prelude::*};
 
