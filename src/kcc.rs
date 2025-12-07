@@ -70,7 +70,7 @@ fn run_kcc(
         if ctx.state.in_crane.is_some() {
             handle_crane_movement(wish_velocity, &time, &move_and_slide, &mut ctx);
         } else {
-            handle_jump(&time, &colliders, &mut ctx);
+            handle_jump(wish_velocity, &time, &colliders, &move_and_slide, &mut ctx);
 
             handle_mantle(&time, &colliders, &move_and_slide, &mut ctx);
 
@@ -653,14 +653,43 @@ fn friction(time: &Time, ctx: &mut CtxItem) {
     }
 }
 
-fn handle_jump(time: &Time, colliders: &Query<ColliderComponents>, ctx: &mut CtxItem) {
+fn handle_jump(
+    wish_velocity: Vec3,
+    time: &Time,
+    colliders: &Query<ColliderComponents>,
+    move_and_slide: &MoveAndSlide,
+    ctx: &mut CtxItem,
+) {
     let Some(jump_time) = ctx.input.jumped.clone() else {
         return;
     };
-    if (ctx.state.grounded.is_none() && ctx.state.last_ground.elapsed() > ctx.cfg.coyote_time)
-        || jump_time.elapsed() > ctx.cfg.jump_input_buffer
-    {
+    if jump_time.elapsed() > ctx.cfg.jump_input_buffer {
         return;
+    }
+    let mut jumpdir = Vec3::Y;
+    // Handle tic tacs when we're in the air beyond coyote-time.
+    if ctx.state.grounded.is_none() && ctx.state.last_ground.elapsed() > ctx.cfg.coyote_time {
+        if let Some(hit) = cast_move(ctx.velocity.0 * time.delta_secs(), move_and_slide, ctx)
+            && hit.point2.y < ctx.transform.translation.y
+        {
+            // Cancel velocity that would be lost to move_and_slide if tac is buffered
+            let vel_dot = ctx.velocity.0.dot(hit.normal1).min(0.0);
+            ctx.velocity.0 -= vel_dot * hit.normal1;
+            jumpdir = hit.normal1;
+        } else if let Some(hit) = cast_move(wish_velocity * time.delta_secs(), move_and_slide, ctx)
+            && hit.point2.y < ctx.transform.translation.y
+        {
+            jumpdir = hit.normal1;
+        } else {
+            // No wall to tic tac off of, we're in free-fall.
+            return;
+        }
+        let wish_unit = wish_velocity.normalize();
+        let wish_dot = -wish_unit.dot(jumpdir);
+        if wish_dot > ctx.cfg.max_tac_cos {
+            return;
+        }
+        jumpdir = (Vec3::Y * ctx.cfg.tac_jump_factor + jumpdir + wish_unit).normalize();
     }
     ctx.input.jumped = None;
     set_grounded(None, colliders, time, ctx);
@@ -675,7 +704,7 @@ fn handle_jump(time: &Time, colliders: &Query<ColliderComponents>, ctx: &mut Ctx
     // v^2 = g * g * 2.0 * 45 / g
     // v = sqrt( g * 2.0 * 45 )
     let fl_mul = (2.0 * ctx.cfg.gravity * ctx.cfg.jump_height).sqrt();
-    ctx.velocity.y = ground_factor * fl_mul;
+    ctx.velocity.0 += jumpdir * ground_factor * fl_mul;
     if let Some(crane_input) = ctx.input.craned.as_mut() {
         crane_input
             .tick((ctx.cfg.crane_input_buffer - ctx.cfg.jump_crane_chain_time).max(Duration::ZERO));
