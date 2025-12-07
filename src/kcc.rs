@@ -77,8 +77,6 @@ fn run_kcc(
         } else {
             handle_jump(wish_velocity, &time, &colliders, &move_and_slide, &mut ctx);
 
-            handle_mantle(&time, &colliders, &move_and_slide, &mut ctx);
-
             // Friction is handled before we add in any base velocity. That way, if we are on a conveyor,
             //  we don't slow when standing still, relative to the conveyor.
             if ctx.state.grounded.is_some() {
@@ -942,24 +940,6 @@ fn handle_jump(
     }
 
     // TODO: Trigger jump event
-}
-
-#[expect(unused_variables, reason = "WIP")]
-fn handle_mantle(
-    time: &Time,
-    colliders: &Query<ColliderComponents>,
-    move_and_slide: &MoveAndSlide,
-    ctx: &mut CtxItem,
-) {
-    let Some(mantle_time) = ctx.input.mantled.clone() else {
-        return;
-    };
-    if mantle_time.elapsed() > ctx.cfg.mantle_input_buffer {}
-    // High level overview:
-    // - move cast up
-    // - translate a bit with horizontal movement
-    // - move cast down
-    // - move cast a bit back
 }
 
 fn start_gravity(time: &Time, ctx: &mut CtxItem) {
