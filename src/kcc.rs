@@ -912,6 +912,7 @@ fn handle_jump(
         ctx.velocity.0 -= vel_dot * normal;
         ctx.state.last_tac.reset();
         let groundedness = ctx.state.tac_velocity.max(vel_dot).min(1.0);
+        ctx.state.tac_velocity = 0.0;
         let tac_wish = wish_unit - (wish_dot.min(0.0) - 1.0) * normal;
         // not sure if this is better (reflection)
         //let tac_wish = wish_unit - (wish_dot.min(0.0) * 2.0) * normal;

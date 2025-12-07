@@ -188,7 +188,7 @@ impl Default for CharacterController {
             tac_jump_factor: 1.0,
             max_tac_cos: 40.0_f32.to_radians().cos(),
             max_air_wish_speed: 0.76,
-            tac_cooldown: Duration::from_millis(500),
+            tac_cooldown: Duration::from_millis(100),
             unground_speed: 10.0,
             step_down_detection_distance: 0.2,
             min_crane_cos: 50.0_f32.to_radians().cos(),
