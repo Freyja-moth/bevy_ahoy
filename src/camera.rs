@@ -29,8 +29,6 @@ pub struct CharacterControllerCameraOf {
     pub step_smooth_time: Duration,
     pub teleport_detection_distance: f32,
     /// The yank speed (rotation rate) in **radians per second**.
-    ///
-    /// Gets applied in the [`yank_camera`] system.
     pub yank_speed: f32,
 }
 
@@ -45,11 +43,8 @@ impl CharacterControllerCameraOf {
         }
     }
 
-    /// Sets the yank speed.
-    ///
-    /// Expects `degrees_per_sec` (e.g., 180.0 for a half-turn per second).
-    pub fn with_yank_rate(mut self, degrees_per_sec: f32) -> Self {
-        self.yank_speed = degrees_per_sec.to_radians();
+    pub fn with_yank_speed(mut self, yank_speed: f32) -> Self {
+        self.yank_speed = yank_speed;
         self
     }
 }
@@ -177,15 +172,9 @@ fn yank_camera(
         return;
     };
 
-    let yank_value = trigger.value;
-
-    if yank_value.abs() < 0.01 {
-        return;
-    }
-
     let (mut yaw, pitch, _) = transform.rotation.to_euler(EulerRot::YXZ);
 
-    let rotation_delta = camera_of.yank_speed * yank_value * time.delta_secs();
+    let rotation_delta = camera_of.yank_speed * trigger.value * time.delta_secs();
 
     yaw -= rotation_delta;
 
