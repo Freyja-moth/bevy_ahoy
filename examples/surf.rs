@@ -8,7 +8,6 @@ use bevy::{
     prelude::*,
     window::{CursorGrabMode, CursorOptions, WindowResolution},
 };
-use bevy_ahoy::input::YankCamera;
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 use bevy_time::Stopwatch;

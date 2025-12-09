@@ -20,7 +20,7 @@ pub mod prelude {
         camera::{CharacterControllerCamera, CharacterControllerCameraOf},
         input::{
             Crane, Crouch, DropObject, Jump, Mantle, Movement, PullObject, RotateCamera, Tac,
-            ThrowObject,
+            ThrowObject, YankCamera,
         },
         pickup,
     };

@@ -3,11 +3,7 @@ use std::{f32::consts::TAU, time::Duration};
 use avian_pickup::actor::AvianPickupActor;
 use bevy_ecs::{lifecycle::HookContext, relationship::Relationship, world::DeferredWorld};
 
-use crate::{
-    CharacterControllerState,
-    input::{RotateCamera, YankCamera},
-    prelude::*,
-};
+use crate::{CharacterControllerState, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
