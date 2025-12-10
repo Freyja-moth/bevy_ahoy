@@ -4,7 +4,7 @@
 [![docs.rs](https://docs.rs/bevy_ahoy/badge.svg)](https://docs.rs/bevy_ahoy)
 
 
-> [!IMPORTANT]  
+> \[!IMPORTANT\]  
 > Bevy Ahoy makes use of an unreleased avian version.
 >
 > To ensure it works you'll need to add a patch in your Cargo.toml
